@@ -1,8 +1,11 @@
 import discord
 import random
 import os
+from dotenv import load_dotenv
 
 client = discord.Client()
+
+load_dotenv()
 
 meow_list = ["mrowW", "mow!", "mewww", "mrew!", "MROWWW", "brrr", "mohwr", "meeeOW", "mrrrrrr", "MeOW", "meeewwwee!"]
 
@@ -20,5 +23,5 @@ async def on_message(message):
     if msg.startswith('$cleo'):
         await message.channel.send(random.choice(meow_list))
 
-token = 'ODc1MTcwMTk0MDYwODczNzY5.YRRnwg.WVIYHoVWZ8BMyCAF6OqJqMSZBS8'
-client.run(token)
+TOKEN = os.getenv("TOKEN");
+client.run(TOKEN)

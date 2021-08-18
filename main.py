@@ -1,28 +1,50 @@
 import discord
+from discord.ext import tasks, commands
 import random
 import os
+import time
 from dotenv import load_dotenv
+from threading import Event, Thread
 
 client = discord.Client()
-
 load_dotenv()
 
-meow_list = ["mrowW", "mow!", "mewww", "mrew!", "MROWWW", "brrr", "mohwr", "meeeOW", "mrrrrrr", "MeOW", "meeewwwee!", "meeeeOwoOo", "meow", "mow mow", "meo meo mew!"]
+meow_list = ["mrowW", "mow!", "mewww", "mrew!", "MROWWW", "brrr", "mohwr", "meeeOW",
+             "mrrrrrr", "MeOW", "meeewwwee!", "meeeeOwoOo", "meow", "mow mow", "meo meo mew!"]
+meow = random.choice(meow_list)
+
 
 outside = False
 fed = False
 pet_count = 0
+secs = 10
+
+
+@tasks.loop(seconds=secs)
+async def constantMeow():
+    gardenzone = client.get_channel(735622629469323396)
+    await gardenzone.send(random.choice(meow_list))
+
 
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
+    gardenzone = client.get_channel(735622629469323396)
+    await gardenzone.send('>>> Cleo is here!')
+
+    if not constantMeow.is_running():
+        constantMeow.start()
+
 
 @client.event
 async def on_message(message):
+
     global fed
+    global secs
     global outside
     global pet_count
-    meow = random.choice(meow_list)
+    global meow
+
     msg = message.content
     send = message.channel.send
 
@@ -34,6 +56,7 @@ async def on_message(message):
             await send('>>> Cleo is already outside!')
         else:
             outside = True
+            constantMeow.cancel()
             await send(' >>> You put Cleo outside!')
     if msg == '$cleo':
         if outside:
@@ -44,9 +67,10 @@ async def on_message(message):
         if not(outside):
             await send(meow)
         else:
-            randomint = random.randint(0,9)
+            randomint = random.randint(0, 9)
             if randomint > 5:
                 outside = False
+                constantMeow.start()
                 await send('>>> You put Cleo back inside!')
                 await send(meow)
             else:
@@ -55,6 +79,9 @@ async def on_message(message):
         if outside:
             await send('>>> Cleo is outside! Type $findcleo to search!')
         else:
+            secs = secs + 10
+            constantMeow.change_interval(seconds=secs)
+
             pet_count = pet_count + 1
             if pet_count < 4:
                 if pet_count == 1:
@@ -64,19 +91,24 @@ async def on_message(message):
                     await send('>>> Cleo sticks her butt up in the air.')
                     await send(meow)
                 if pet_count == 3:
-                     await send('>>> Cleo wiggles under your hand.')
-                     await send(meow)
+                    await send('>>> Cleo wiggles under your hand.')
+                    await send(meow)
             else:
                 await send('>>> Cleo gives you a little nip! Try again later.')
                 pet_count = 0
     if msg == '$feed':
         if outside:
             await send('>>> Cleo is outside! Type $findcleo to search!')
-        else: 
+        else:
+            secs = secs + 20
+            constantMeow.change_interval(seconds=secs)
+
             fed = True
             await send('>>> Cleo has been fed! She slurps up her food happily.')
-            await send(meow)
-    
+    if msg == '$shutup':
+        constantMeow.cancel()
+        await send('>>> Cleo zipped it.')
 
-TOKEN = os.getenv("TOKEN");
+
+TOKEN = os.getenv("TOKEN")
 client.run(TOKEN)

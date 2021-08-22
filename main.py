@@ -5,6 +5,7 @@ import os
 import time
 from dotenv import load_dotenv
 from threading import Event, Thread
+import requests
 
 client = discord.Client()
 load_dotenv()
@@ -17,7 +18,9 @@ meow = random.choice(meow_list)
 outside = False
 fed = False
 pet_count = 0
-secs = 10
+secs = 30
+
+# On ready/Start Up events
 
 
 @tasks.loop(seconds=secs)
@@ -36,6 +39,8 @@ async def on_ready():
         constantMeow.start()
 
 
+# On Message Send
+
 @client.event
 async def on_message(message):
 
@@ -47,9 +52,12 @@ async def on_message(message):
 
     msg = message.content
     send = message.channel.send
+    user = message.author
 
     if message.author == client.user:
         return
+
+# Cleo Outside
 
     if msg == '$cleooutside':
         if outside:
@@ -58,11 +66,20 @@ async def on_message(message):
             outside = True
             constantMeow.cancel()
             await send(' >>> You put Cleo outside!')
+
+# Cleo Meow
+
     if msg == '$cleo':
         if outside:
             await send('>>> Cleo is outside! Type $findcleo to search!')
         else:
             await send(meow)
+    if msg == '$fact':
+
+        r = requests.get(url="https://catfact.ninja/fact?max_length=140")
+        fact = r.json()
+        await send(f">>> {fact.get('fact')}")
+# Find Cleo
     if msg == '$findcleo':
         if not(outside):
             await send(meow)
@@ -75,6 +92,7 @@ async def on_message(message):
                 await send(meow)
             else:
                 await send('>>> You could not find Cleo. Try again later!')
+# Pet Cleo
     if msg == '$pet':
         if outside:
             await send('>>> Cleo is outside! Type $findcleo to search!')
@@ -96,6 +114,7 @@ async def on_message(message):
             else:
                 await send('>>> Cleo gives you a little nip! Try again later.')
                 pet_count = 0
+# Feed cleo
     if msg == '$feed':
         if outside:
             await send('>>> Cleo is outside! Type $findcleo to search!')
@@ -105,9 +124,49 @@ async def on_message(message):
 
             fed = True
             await send('>>> Cleo has been fed! She slurps up her food happily.')
+# Cleo Shut up
     if msg == '$shutup':
         constantMeow.cancel()
         await send('>>> Cleo zipped it.')
+# Cleo Help Command
+    if msg == '$help':
+        emb = discord.Embed(title='Cleo Bot Commands')
+        emb.add_field(name='$cleo', value='Say hi to Cleo!', inline=False)
+        emb.add_field(
+            name='$shutup', value='Cleo is being too loud. Tell her to stop.', inline=False)
+        emb.add_field(name='$cleooutside',
+                      value='Put Cleo outside.', inline=False)
+        emb.add_field(
+            name='$findcleo', value='Only works if Cleo is outside. Look for Cleo outside.', inline=False)
+        emb.add_field(
+            name='$pet', value='Give Cleo a pet!', inline=False)
+        emb.add_field(
+            name='$feed', value='Feed Cleo.', inline=False)
+        emb.add_field(
+            name='$fact', value='Ask for a cat fact.', inline=False)
+        emb.add_field(
+            name='$roles', value='Display List of roles', inline=False)
+        await send(embed=emb)
+
+# Cleo List Roles
+    if msg == '$roles':
+        emb = discord.Embed(title='Roles')
+        emb.add_field(name='Baby', value='$rolebaby', inline=False)
+        emb.add_field(
+            name='Busby', value='$rolebusby', inline=False)
+        await send(embed=emb)
+
+# Cleo Role Change
+
+    if msg == '$rolebaby':
+        baby = discord.utils.get(message.guild.roles, name='baby')
+        await user.add_roles(baby)
+        await send(f">>> {user} was assigned to role 'baby'!")
+
+    if msg == '$rolebusby':
+        busby = discord.utils.get(message.guild.roles, name='busby')
+        await user.add_roles(busby)
+        await send(f">>> {user} was assigned to role 'busby'!")
 
 
 TOKEN = os.getenv("TOKEN")

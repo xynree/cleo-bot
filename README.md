@@ -1,4 +1,4 @@
-# CLEO BOT
+# Cleo Bot
 
 Commands:
 
